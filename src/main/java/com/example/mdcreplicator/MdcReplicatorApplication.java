@@ -9,6 +9,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.actuate.autoconfigure.observation.ObservationProperties;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import reactor.core.publisher.Hooks;
 
 import java.time.Duration;
 
@@ -16,6 +17,7 @@ import java.time.Duration;
 public class MdcReplicatorApplication {
 
     public static void main(String[] args) {
+        Hooks.enableAutomaticContextPropagation();
         SpringApplication.run(MdcReplicatorApplication.class, args);
     }
 
