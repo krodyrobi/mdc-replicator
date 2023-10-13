@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: "mdc-replicator"
+
+logging:
+  pattern:
+    level: "[%X{x-request-id:-}] %5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
+management:
+  observations:
+    http:
+      client:
+        requests:
+          name: "http.client.requests"
+      server:
+        requests:
+          name: "http.server.requests"
+  tracing:
+    enabled: true
+    baggage:
+      enabled: true
+      correlation:
+        enabled: true
+        fields: x-request-id
+      remote-fields: x-request-id
+    propagation:
+      type: w3c, b3_multi, b3
