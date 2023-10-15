@@ -1,4 +1,4 @@
-Hit `http://localhost:8080/` and you should see the current CEO.
+`/raw` works but as soon as I introduce the monoKt call it fails even though I manually add the mdccontext.
 
 - All logging points should return `x-request-id, traceId and spanId` in the log entry. (WORKING)
 - OkHttp sends `traceId/spanId` headers (WORKING)
