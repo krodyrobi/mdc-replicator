@@ -30,7 +30,7 @@ public class SampleController {
         return MonoKt.<String>mono(
                 Dispatchers.getIO().plus(new MDCContext()), // removing new MDCContext() stop propagation even for logs
                 (scope, continuation) -> {
-                    logger.info("inside raw continuation lambda");
+                    logger.info("inside continuation lambda");
                     return kotlinDummyClass.exampleSuspend(continuation);
                 }
             )
