@@ -1,9 +1,10 @@
-`/raw` works but as soon as I introduce the monoKt call it fails even though I manually add the mdccontext.
+Some endpoints work completely some don't when wrapped with `MonoKt`
+From examples in the repo seems like okhttp enqueue forgets about mdc
 
-- All logging points should return `x-request-id, traceId and spanId` in the log entry. (WORKING)
-- OkHttp sends `traceId/spanId` headers (WORKING)
-- OkHttp forwards `x-request-id` header (NOT WORKING)
+Expected:
+- All logging points should return `x-request-id, traceId and spanId` in the log entry.
+- Forwards/Sends `traceId/spanId` headers
+- Forwards/sends `x-request-id`
 
-To see this breakpoint in `OkHttpObservationInterceptor.intercept` on line `response = chain.proceed(newRequest);`
-MDCContext at this point does have the `x-request-id` entry and does NOT have observability keys
-
+Request bin to debug
+https://public.requestbin.com/r/eny7z0f6m5g2
