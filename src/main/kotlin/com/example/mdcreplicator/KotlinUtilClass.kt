@@ -18,7 +18,7 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 @Component
-class KotlinDummyClass(
+class KotlinUtilClass(
     private val client: OkHttpClient,
     restTemplateBuilder: RestTemplateBuilder,
     webClientBuilder: WebClient.Builder
@@ -38,7 +38,7 @@ class KotlinDummyClass(
             override fun onResponse(call: Call, response: Response) {
                 logger.info("inside enqueue onResponse")
                 continuation.resume(
-                    response.body().use {
+                    response.body.use {
                         it?.string() ?: "N/A"
                     })
             }
@@ -50,7 +50,7 @@ class KotlinDummyClass(
 
         val request = Request.Builder().url("$URL/monoBlockingOkHttp").build()
         try {
-            continuation.resume(client.newCall(request).execute().body().use { it?.string() ?: "N/A" })
+            continuation.resume(client.newCall(request).execute().body.use { it?.string() ?: "N/A" })
         } catch (e: Throwable) {
             continuation.resumeWithException(e);
         }

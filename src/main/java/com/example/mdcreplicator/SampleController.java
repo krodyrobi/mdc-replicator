@@ -18,16 +18,16 @@ public class SampleController {
     private final Logger logger = LoggerFactory.getLogger(SampleController.class);
 
     private final OkHttpClient okHttpClient;
-    private final KotlinDummyClass kotlinDummyClass;
+    private final KotlinUtilClass kotlinUtilClass;
     private final ObservationRegistry observationRegistry;
 
     public SampleController(
         OkHttpClient okHttpClient,
-        KotlinDummyClass kotlinDummyClass,
+        KotlinUtilClass kotlinUtilClass,
         ObservationRegistry observationRegistry
     ) {
         this.okHttpClient = okHttpClient;
-        this.kotlinDummyClass = kotlinDummyClass;
+        this.kotlinUtilClass = kotlinUtilClass;
         this.observationRegistry = observationRegistry;
     }
 
@@ -35,7 +35,7 @@ public class SampleController {
     @GetMapping("/blockingOkHttp")
     public String blockingOkHttp() throws IOException {
         logger.info("blockingOkHttp called");
-        Request request = new Request.Builder().url(KotlinDummyClass.URL + "/blockingOkHttp").get().build();
+        Request request = new Request.Builder().url(KotlinUtilClass.URL + "/blockingOkHttp").get().build();
         return okHttpClient.newCall(request).execute().body().string();
     }
 
@@ -47,7 +47,7 @@ public class SampleController {
                 Dispatchers.getIO().plus(AsContextElementKt.asContextElement(observationRegistry)),
                 (scope, continuation) -> {
                     logger.info("inside continuation lambda");
-                    return kotlinDummyClass.okHttpSuspend(continuation);
+                    return kotlinUtilClass.okHttpSuspend(continuation);
                 }
             )
             .block();
@@ -61,7 +61,7 @@ public class SampleController {
                 Dispatchers.getIO().plus(AsContextElementKt.asContextElement(observationRegistry)),
                 (scope, continuation) -> {
                     logger.info("inside continuation lambda");
-                    return kotlinDummyClass.blockingOkHttpSuspend(continuation);
+                    return kotlinUtilClass.blockingOkHttpSuspend(continuation);
                 }
             )
             .block();
@@ -75,7 +75,7 @@ public class SampleController {
                 Dispatchers.getIO().plus(AsContextElementKt.asContextElement(observationRegistry)),
                 (scope, continuation) -> {
                     logger.info("inside continuation lambda");
-                    return kotlinDummyClass.restTemplateSuspend(continuation);
+                    return kotlinUtilClass.restTemplateSuspend(continuation);
                 }
             )
             .block();
@@ -89,7 +89,7 @@ public class SampleController {
                 Dispatchers.getIO().plus(AsContextElementKt.asContextElement(observationRegistry)),
                 (scope, continuation) -> {
                     logger.info("inside continuation lambda");
-                    return kotlinDummyClass.webClientSuspend(continuation);
+                    return kotlinUtilClass.webClientSuspend(continuation);
                 }
             )
             .block();
