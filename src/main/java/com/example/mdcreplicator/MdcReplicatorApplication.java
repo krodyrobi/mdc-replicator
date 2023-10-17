@@ -1,8 +1,12 @@
 package com.example.mdcreplicator;
 
+import io.micrometer.context.ContextExecutorService;
+import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.core.instrument.binder.okhttp3.OkHttpObservationInterceptor;
 import io.micrometer.observation.ObservationRegistry;
+import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
+import okhttp3.internal.Util;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.actuate.autoconfigure.observation.ObservationProperties;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,6 +14,9 @@ import org.springframework.context.annotation.Bean;
 import reactor.core.publisher.Hooks;
 
 import java.time.Duration;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @SpringBootApplication
 public class MdcReplicatorApplication {
@@ -26,12 +33,16 @@ public class MdcReplicatorApplication {
     ) {
         String observationName = observationProperties.getHttp().getClient().getRequests().getName();
 
-        // TODO intercept does not append baggage 'x-request-id', it does however
         var interceptor = OkHttpObservationInterceptor
             .builder(observationRegistry, observationName)
             .build();
 
+        var executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60, TimeUnit.SECONDS,
+            new SynchronousQueue<>(), Util.threadFactory("OkHttp Dispatcher", false));
+        var instrumentedExecutor = ContextExecutorService.wrap(executor, ContextSnapshotFactory.builder().build()::captureAll);
+
         var httpClient = new OkHttpClient.Builder()
+            .dispatcher(new Dispatcher(instrumentedExecutor))
             .addInterceptor(interceptor)
             .callTimeout(Duration.ofSeconds(3));
 
