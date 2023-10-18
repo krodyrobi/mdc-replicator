@@ -4,8 +4,8 @@ spring:
 
 logging:
   pattern:
-    level: "[%X{x-request-id:-}] %5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
-
+    correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-},%X{x-request-id:-}] "
+  include-application-name: false
 management:
   observations:
     http:
@@ -17,6 +17,8 @@ management:
           name: "http.server.requests"
   tracing:
     enabled: true
+    sampling:
+      probability: 1
     baggage:
       enabled: true
       correlation:

@@ -21,8 +21,11 @@ import java.util.concurrent.TimeUnit;
 @SpringBootApplication
 public class MdcReplicatorApplication {
 
-    public static void main(String[] args) {
+    static {
         Hooks.enableAutomaticContextPropagation();
+    }
+
+    public static void main(String[] args) {
         SpringApplication.run(MdcReplicatorApplication.class, args);
     }
 
@@ -41,6 +44,7 @@ public class MdcReplicatorApplication {
             new SynchronousQueue<>(), Util.threadFactory("OkHttp Dispatcher", false));
         var instrumentedExecutor = ContextExecutorService.wrap(executor, ContextSnapshotFactory.builder().build()::captureAll);
 
+        // noinspection KotlinInternalInJava
         var httpClient = new OkHttpClient.Builder()
             .dispatcher(new Dispatcher(instrumentedExecutor))
             .addInterceptor(interceptor)
