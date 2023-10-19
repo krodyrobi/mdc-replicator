@@ -1,6 +1,7 @@
 package com.example.mdcreplicator;
 
 import io.micrometer.core.instrument.kotlin.AsContextElementKt;
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.tracing.BaggageManager;
 import io.micrometer.tracing.Span;
@@ -133,5 +134,33 @@ class MdcReplicatorApplicationTests {
         } finally {
             span.end();
         }
+    }
+
+    @Test
+    void sample_test5() {
+        Observation.start("test", observationRegistry).observe(() -> {
+            try (var baggageInScope = baggageManager.createBaggageInScope(CORRELATION_ID_HEADER_NAME, createCorrelationId())) {
+                logger.info(baggageInScope.get());
+                MonoKt.<String>mono(
+                        Dispatchers.getIO().plus(AsContextElementKt.asContextElement(observationRegistry)),
+                        (scope, continuation) -> kotlinUtilClass.webClientSuspend(continuation)
+                    )
+                    .block();
+            }
+        });
+    }
+
+    @Test
+    void sample_test6() {
+        Observation.start("test", observationRegistry).observe(() -> {
+            try (var baggageInScope = baggageManager.createBaggageInScope(CORRELATION_ID_HEADER_NAME, createCorrelationId())) {
+                logger.info(baggageInScope.get());
+                MonoKt.<String>mono(
+                        Dispatchers.getIO().plus(AsContextElementKt.asContextElement(observationRegistry)),
+                        (scope, continuation) -> kotlinUtilClass.okHttpSuspend(continuation)
+                    )
+                    .block();
+            }
+        });
     }
 }
