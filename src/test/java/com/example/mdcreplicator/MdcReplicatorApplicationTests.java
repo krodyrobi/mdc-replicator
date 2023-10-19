@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Hooks;
 
 import java.io.IOException;
@@ -43,6 +44,9 @@ class MdcReplicatorApplicationTests {
 
     @Autowired
     OkHttpClient okHttpClient;
+
+    @Autowired
+    WebClient.Builder builder;
 
     private final Logger logger = LoggerFactory.getLogger(MdcReplicatorApplicationTests.class);
 
@@ -87,13 +91,45 @@ class MdcReplicatorApplicationTests {
                     }
 
                     @Override
-                    public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                    public void onResponse(@NotNull Call call, @NotNull Response response) {
                         logger.info("on response");
                         latch.countDown();
                     }
                 }
             );
             latch.await();
+        } finally {
+            span.end();
+        }
+    }
+
+    @Test
+    void sample_test3() {
+        Span span = this.tracer.nextSpan();
+        try (
+            var spanInScope = tracer.withSpan(span.start());
+            var baggageInScope = baggageManager.createBaggageInScope(CORRELATION_ID_HEADER_NAME, createCorrelationId())
+        ) {
+            logger.info(baggageInScope.get());
+            builder.baseUrl(URL).build().get().retrieve().bodyToMono(String.class).block();
+        } finally {
+            span.end();
+        }
+    }
+
+    @Test
+    void sample_test4() {
+        Span span = this.tracer.nextSpan();
+        try (
+            var spanInScope = tracer.withSpan(span.start());
+            var baggageInScope = baggageManager.createBaggageInScope(CORRELATION_ID_HEADER_NAME, createCorrelationId())
+        ) {
+            logger.info(baggageInScope.get());
+            MonoKt.<String>mono(
+                    Dispatchers.getIO().plus(AsContextElementKt.asContextElement(observationRegistry)),
+                    (scope, continuation) -> kotlinUtilClass.webClientSuspend(continuation)
+                )
+                .block();
         } finally {
             span.end();
         }
