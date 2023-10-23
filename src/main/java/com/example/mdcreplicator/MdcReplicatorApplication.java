@@ -18,10 +18,12 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+
 @SpringBootApplication
 public class MdcReplicatorApplication {
 
     static {
+        // This gets loaded always irrespective of useMainMethod
         Hooks.enableAutomaticContextPropagation();
     }
 

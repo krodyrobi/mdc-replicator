@@ -27,3 +27,7 @@ management:
       remote-fields: x-request-id
     propagation:
       type: w3c, b3_multi, b3
+
+app:
+  scheduling:
+    enable: false

@@ -1,15 +1,9 @@
 package com.example.mdcreplicator;
 
-import io.micrometer.core.instrument.kotlin.AsContextElementKt;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.tracing.BaggageManager;
-import io.micrometer.tracing.Span;
 import io.micrometer.tracing.Tracer;
-import kotlinx.coroutines.Dispatchers;
-import kotlinx.coroutines.reactor.MonoKt;
-import okhttp3.*;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -17,20 +11,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Hooks;
 
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 
-import static com.example.mdcreplicator.KotlinUtilClass.URL;
 import static com.example.mdcreplicator.filter.CorrelationIdFilter.CORRELATION_ID_HEADER_NAME;
 import static com.example.mdcreplicator.filter.CorrelationIdFilter.createCorrelationId;
 import static org.springframework.boot.test.context.SpringBootTest.UseMainMethod.ALWAYS;
 
-@SpringBootTest(useMainMethod = ALWAYS)
+@SpringBootTest(useMainMethod = ALWAYS, properties = {"app.scheduling.enable=false"})
 @AutoConfigureObservability
 class MdcReplicatorApplicationTests {
+    private final Logger logger = LoggerFactory.getLogger(MdcReplicatorApplicationTests.class);
+
     @Autowired
     Tracer tracer;
 
@@ -41,15 +34,7 @@ class MdcReplicatorApplicationTests {
     ObservationRegistry observationRegistry;
 
     @Autowired
-    KotlinUtilClass kotlinUtilClass;
-
-    @Autowired
-    OkHttpClient okHttpClient;
-
-    @Autowired
-    WebClient.Builder builder;
-
-    private final Logger logger = LoggerFactory.getLogger(MdcReplicatorApplicationTests.class);
+    OkHttpService okHttpService;
 
     @BeforeAll
     public static void beforeAll() {
@@ -57,109 +42,25 @@ class MdcReplicatorApplicationTests {
     }
 
     @Test
-    void sample_test() {
-        Span span1 = this.tracer.nextSpan();
-        try (
-            var spanInScope = tracer.withSpan(span1.start());
-            var baggageInScope = baggageManager.createBaggageInScope(CORRELATION_ID_HEADER_NAME, createCorrelationId())
-        ) {
-            logger.info(baggageInScope.get());
-            MonoKt.<String>mono(
-                    Dispatchers.getIO().plus(AsContextElementKt.asContextElement(observationRegistry)),
-                    (scope, continuation) -> kotlinUtilClass.okHttpSuspend(continuation)
-                )
-                .block();
-        } finally {
-            span1.end();
+    void test1() throws ExecutionException, InterruptedException {
+        // no current observation
+        logger.info("in test1 {}", observationRegistry.getCurrentObservation());
+        try (var ignored = baggageManager.createBaggageInScope(CORRELATION_ID_HEADER_NAME, createCorrelationId())) {
+            okHttpService.call();
         }
     }
 
     @Test
-    void sample_test2() throws InterruptedException {
-        Span span = this.tracer.nextSpan();
-        try (
-            var spanInScope = tracer.withSpan(span.start());
-            var baggageInScope = baggageManager.createBaggageInScope(CORRELATION_ID_HEADER_NAME, createCorrelationId())
-        ) {
-            logger.info(baggageInScope.get());
-            CountDownLatch latch = new CountDownLatch(1);
-            okHttpClient.newCall(new Request.Builder().url(URL).get().build()).enqueue(
-                new Callback() {
-                    @Override
-                    public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                        logger.info("on response");
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void onResponse(@NotNull Call call, @NotNull Response response) {
-                        logger.info("on response");
-                        latch.countDown();
-                    }
+    void test2() {
+        logger.info("in test2 {}", observationRegistry.getCurrentObservation());
+        Observation.start("test", observationRegistry).observe(() -> {
+            try (var ignored = baggageManager.createBaggageInScope(CORRELATION_ID_HEADER_NAME, createCorrelationId())) {
+                logger.info("in test2 observe {}", observationRegistry.getCurrentObservation());
+                try {
+                    okHttpService.call();
+                } catch (InterruptedException | ExecutionException e) {
+                    logger.error("failed", e);
                 }
-            );
-            latch.await();
-        } finally {
-            span.end();
-        }
-    }
-
-    @Test
-    void sample_test3() {
-        Span span = this.tracer.nextSpan();
-        try (
-            var spanInScope = tracer.withSpan(span.start());
-            var baggageInScope = baggageManager.createBaggageInScope(CORRELATION_ID_HEADER_NAME, createCorrelationId())
-        ) {
-            logger.info(baggageInScope.get());
-            builder.baseUrl(URL).build().get().retrieve().bodyToMono(String.class).block();
-        } finally {
-            span.end();
-        }
-    }
-
-    @Test
-    void sample_test4() {
-        Span span = this.tracer.nextSpan();
-        try (
-            var spanInScope = tracer.withSpan(span.start());
-            var baggageInScope = baggageManager.createBaggageInScope(CORRELATION_ID_HEADER_NAME, createCorrelationId())
-        ) {
-            logger.info(baggageInScope.get());
-            MonoKt.<String>mono(
-                    Dispatchers.getIO().plus(AsContextElementKt.asContextElement(observationRegistry)),
-                    (scope, continuation) -> kotlinUtilClass.webClientSuspend(continuation)
-                )
-                .block();
-        } finally {
-            span.end();
-        }
-    }
-
-    @Test
-    void sample_test5() {
-        Observation.start("test", observationRegistry).observe(() -> {
-            try (var baggageInScope = baggageManager.createBaggageInScope(CORRELATION_ID_HEADER_NAME, createCorrelationId())) {
-                logger.info(baggageInScope.get());
-                MonoKt.<String>mono(
-                        Dispatchers.getIO().plus(AsContextElementKt.asContextElement(observationRegistry)),
-                        (scope, continuation) -> kotlinUtilClass.webClientSuspend(continuation)
-                    )
-                    .block();
-            }
-        });
-    }
-
-    @Test
-    void sample_test6() {
-        Observation.start("test", observationRegistry).observe(() -> {
-            try (var baggageInScope = baggageManager.createBaggageInScope(CORRELATION_ID_HEADER_NAME, createCorrelationId())) {
-                logger.info(baggageInScope.get());
-                MonoKt.<String>mono(
-                        Dispatchers.getIO().plus(AsContextElementKt.asContextElement(observationRegistry)),
-                        (scope, continuation) -> kotlinUtilClass.okHttpSuspend(continuation)
-                    )
-                    .block();
             }
         });
     }
