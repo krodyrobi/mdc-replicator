@@ -30,4 +30,4 @@ management:
 
 app:
   scheduling:
-    enable: false
+    enable: true

@@ -33,7 +33,6 @@ public class SampleSchedule {
 
     @Scheduled(fixedDelay = 10_000L)
     public void run() throws ExecutionException, InterruptedException {
-        // has current observation, but I assume the scheduled pool not instrumented in latest snapshot yet
         logger.info("in schedule {}", observationRegistry.getCurrentObservation());
         try (var ignored = baggageManager.createBaggageInScope(CORRELATION_ID_HEADER_NAME, createCorrelationId())) {
             okHttpService.call();
